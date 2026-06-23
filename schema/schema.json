@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    "Person",
+    "Company",
+    "Location",
+    "Product",
+    "Event",
+    "Organization",
+    "Country"
+  ],
+  "relationships": [
+    "FOUNDED",
+    "WORKS_AT",
+    "LOCATED_IN",
+    "CREATED",
+    "PART_OF",
+    "ATTENDED",
+    "ATTACKED",
+    "KILLED"
+  ]
+}

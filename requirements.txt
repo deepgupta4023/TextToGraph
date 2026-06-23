@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+streamlit
+openai
+python-dotenv
+rapidfuzz
+gqlalchemy
+pyvis
+networkx
+pydantic
+requests
+nodeenv
+mcp-memgraph
+fastmcp
+mcp
+anthropic

@@ -1,0 +1,83 @@
+
+services:
+
+  memgraph:
+    image: memgraph/memgraph:latest
+    container_name: memgraph-graphbuilder
+    ports:
+      - "7687:7687"
+      - "7444:7444"
+    volumes:
+      - memgraph-data:/var/lib/memgraph
+    command: >
+      --schema-info-enabled=true
+      --log-level=WARNING
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import socket; s=socket.socket(); s.settimeout(3); s.connect(('localhost',7687)); s.close(); print('ok')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+  
+  lab:
+    image: memgraph/lab:latest
+    container_name: memgraph-lab
+    ports:
+      - "3000:3000"
+    depends_on:
+      - memgraph
+    environment:
+      - QUICK_CONNECT_MG_HOST=memgraph
+      - QUICK_CONNECT_MG_PORT=7687
+      
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: app-apiv2
+    ports:
+      - "8080:8080"
+    # volumes:
+    #   - ./report_assets:/app/report_assets
+    environment:
+      # ── LLM ──────────────────────────────────────────────────────────
+      LLM_BACKEND:        ${LLM_BACKEND:-openai}
+      ANTHROPIC_API_KEY:  ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL:       ${CLAUDE_MODEL:-claude-sonnet-4-20250514}
+      OPENAI_API_KEY:     ${OPENAI_API_KEY:-}
+      OPENAI_MODEL:       ${OPENAI_MODEL:-gpt-4o}
+
+      # ── MCP (stdio) ───────────────────────────────────────────────────
+      # mcp-memgraph is installed via pip and spawned as a subprocess.
+      # No separate container needed.
+      MCP_TRANSPORT:      stdio
+      MCP_COMMAND:        mcp-memgraph
+      MCP_ARGS:           ""
+
+      # ── Memgraph Bolt ─────────────────────────────────────────────────
+      # mcp-memgraph subprocess needs to know where Memgraph is.
+      # Uses internal Docker DNS — 'memgraph' is the service name above.
+      MEMGRAPH_HOST:      memgraph
+      MEMGRAPH_PORT:      7687
+      MEMGRAPH_USER:      ${MEMGRAPH_USER:-}
+      MEMGRAPH_PASSWORD:  ${MEMGRAPH_PASSWORD:-}
+
+      # Used by memgraph_bolt.py for direct Cypher queries
+      MEMGRAPH_BOLT_URL:  bolt://memgraph:7687
+      MEMGRAPH_URI:       bolt://memgraph:7687   
+      MEMGRAPH_URL:       bolt://memgraph:7687  
+
+      # ── Paths ─────────────────────────────────────────────────────────
+      # REPORT_ASSETS_PATH: /app/report_assets
+
+    depends_on:
+      memgraph:
+        condition: service_healthy   # wait for Memgraph before starting
+    restart: unless-stopped
+    
+
+
+
+volumes:
+  memgraph-data:
